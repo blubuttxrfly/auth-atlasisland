@@ -41,24 +41,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
     res.setHeader('Access-Control-Allow-Credentials', 'true')
+    res.setHeader('Vary', 'Origin')
     res.end()
     return
   }
 
+  const allowedOrigin = (req.headers as any).origin || 'https://auth.atlasisland.co'
+
   if (req.method !== 'POST') {
-    res.status(405).json({ success: false, error: 'Method not allowed' })
+    res.status(405)
+      .setHeader('Access-Control-Allow-Origin', allowedOrigin)
+      .setHeader('Access-Control-Allow-Credentials', 'true')
+      .setHeader('Vary', 'Origin')
+      .json({ success: false, error: 'Method not allowed' })
     return
   }
 
   if (!isRedisConfigured()) {
-    res.status(503).json({ success: false, error: 'Auth service storage not configured' })
+    res.status(503)
+      .setHeader('Access-Control-Allow-Origin', allowedOrigin)
+      .setHeader('Access-Control-Allow-Credentials', 'true')
+      .setHeader('Vary', 'Origin')
+      .json({ success: false, error: 'Auth service storage not configured' })
     return
   }
 
   const { email, returnTo } = req.body || {}
 
   if (!email || typeof email !== 'string' || !isValidEmail(email)) {
-    res.status(400).json({ success: false, error: 'A valid email is required' })
+    res.status(400)
+      .setHeader('Access-Control-Allow-Origin', allowedOrigin)
+      .setHeader('Access-Control-Allow-Credentials', 'true')
+      .setHeader('Vary', 'Origin')
+      .json({ success: false, error: 'A valid email is required' })
     return
   }
 
@@ -68,7 +83,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const rateKey = Keys.magicLinkRate(normalizedEmail)
   const currentCount = (await redis.get<number>(rateKey)) || 0
   if (currentCount >= MAX_MAGIC_LINKS_PER_WINDOW) {
-    res.status(429).json({ success: false, error: 'Too many magic link requests. Please wait a few minutes.' })
+    res.status(429)
+      .setHeader('Access-Control-Allow-Origin', allowedOrigin)
+      .setHeader('Access-Control-Allow-Credentials', 'true')
+      .setHeader('Vary', 'Origin')
+      .json({ success: false, error: 'Too many magic link requests. Please wait a few minutes.' })
     return
   }
 
@@ -98,8 +117,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     console.error('[magic-link] email failed:', emailResult.error)
   }
 
-  res.status(200).json({
-    success: true,
-    message: 'If this email is connected to Atlas Island, a sacred doorway has been sent.',
-  })
+  res.status(200)
+    .setHeader('Access-Control-Allow-Origin', allowedOrigin)
+    .setHeader('Access-Control-Allow-Credentials', 'true')
+    .setHeader('Vary', 'Origin')
+    .json({
+      success: true,
+      message: 'If this email is connected to Atlas Island, a sacred doorway has been sent.',
+    })
 }
